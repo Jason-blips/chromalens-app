@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "chromalens",
+  "name": "chromalens - 图像识别与色彩分析工具",
   "icons": [
     {
       "src": "favicon.ico",

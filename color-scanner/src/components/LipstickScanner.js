@@ -79,7 +79,7 @@ const LipstickScanner = () => {
 
     return (
         <div className="flex flex-col items-center p-4 space-y-4">
-            <h2 className="text-xl font-bold">Lipstick Shade Scanner</h2>
+            <h2 className="text-xl font-bold">色彩分析工具</h2>
             <video ref={videoRef} autoPlay className="w-full max-w-md rounded-lg" />
             <Button onClick={startCamera} text="Start Camera" color="blue" />
             <Button onClick={captureImage} text="Capture Image" color="green" />
