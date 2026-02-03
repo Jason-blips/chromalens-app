@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import ColorThief from 'color-thief';
+import { 
+    extractDominantColorFromCanvas, 
+    extractDominantColorFromVideo,
+    extractDominantColorFromImageData 
+} from '../utils/fastColorExtractor';
 
 /**
  * 颜色提取自定义Hook
@@ -60,11 +65,11 @@ export const useColorExtraction = () => {
     }, []);
 
     /**
-     * 从Canvas元素中提取主色调（用于实时视频帧分析）
+     * 从Canvas元素中快速提取主色调（优化版本，响应时间<150ms）
      * @param {HTMLCanvasElement} canvas - Canvas元素
-     * @param {number} quality - 提取质量
+     * @param {Object} options - 提取选项
      */
-    const extractColorFromCanvas = useCallback(async (canvas, quality = 5) => {
+    const extractColorFromCanvas = useCallback((canvas, options = {}) => {
         if (!canvas) {
             return;
         }
@@ -73,16 +78,42 @@ export const useColorExtraction = () => {
         setError(null);
 
         try {
-            // 将canvas转换为图像数据
-            const imageData = canvas.toDataURL('image/png');
-            await extractDominantColor(imageData, quality);
+            // 使用优化的像素采样算法
+            const color = extractDominantColorFromCanvas(canvas, options);
+            setDominantColor(color);
         } catch (err) {
             console.error('Error extracting color from canvas:', err);
             setError('从画布提取颜色失败');
         } finally {
             setIsExtracting(false);
         }
-    }, [extractDominantColor]);
+    }, []);
+
+    /**
+     * 从视频元素中实时提取主色调（优化版本）
+     * @param {HTMLVideoElement} video - Video元素
+     * @param {HTMLCanvasElement} canvas - 临时Canvas元素
+     * @param {Object} options - 提取选项
+     */
+    const extractColorFromVideo = useCallback((video, canvas, options = {}) => {
+        if (!video || !canvas) {
+            return;
+        }
+
+        setIsExtracting(true);
+        setError(null);
+
+        try {
+            // 使用优化的视频帧分析
+            const color = extractDominantColorFromVideo(video, canvas, options);
+            setDominantColor(color);
+        } catch (err) {
+            console.error('Error extracting color from video:', err);
+            setError('从视频提取颜色失败');
+        } finally {
+            setIsExtracting(false);
+        }
+    }, []);
 
     /**
      * 清除提取的颜色
@@ -98,6 +129,7 @@ export const useColorExtraction = () => {
         error,
         extractDominantColor,
         extractColorFromCanvas,
+        extractColorFromVideo,
         clearColor
     };
 };
