@@ -44,6 +44,22 @@
   background-color: #10b981;
 }
 
+.buttonGray {
+  background-color: #6b7280;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .fileInput {
   margin-top: 0.5rem;
   padding: 0.5rem;
@@ -62,11 +78,119 @@
   border-radius: 0.5rem;
 }
 
+.errorMessage {
+  color: #ef4444;
+  background-color: #fee2e2;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  width: 100%;
+  max-width: 28rem;
+  text-align: center;
+}
+
+.fileLabel {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.fileLabel:hover {
+  background-color: #e5e7eb;
+}
+
+.resultContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 28rem;
+}
+
+.loading {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.colorInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
 .colorDisplay {
-  width: 4rem;
-  height: 4rem;
+  width: 5rem;
+  height: 5rem;
   border-radius: 50%;
-  margin-top: 0.5rem;
-  border: 2px solid #ccc;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 3px solid #e5e7eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.colorFormats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.colorFormatItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+}
+
+.formatLabel {
+  font-weight: 600;
+  color: #374151;
+  min-width: 3rem;
+}
+
+.formatValue {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.colorName {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  width: 100%;
+}
+
+.nameLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.nameValue {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.confidence {
+  font-size: 0.875rem;
+  font-weight: normal;
+  color: #6b7280;
+  margin-left: 0.5rem;
 }
