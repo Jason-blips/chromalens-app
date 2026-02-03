@@ -12,7 +12,7 @@ def upload_file():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     
-    file = request.files["files"]
+    file = request.files["file"]
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
 
@@ -23,5 +23,5 @@ def upload_file():
     return jsonify({"dominant_color": dominant_color})
 
 if __name__ == "__main__":
-    app.run(host = "0.0.0.0", post = 5000, debug = True)
+    app.run(host = "0.0.0.0", port = 5000, debug = True)
 
