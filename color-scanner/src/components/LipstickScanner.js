@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import ColorThief from "color-thief";
+import styles from "./LipstickScanner.module.css";
 
 const LipstickScanner = () => {
     const [image, setImage] = useState(null);
@@ -72,26 +73,37 @@ const LipstickScanner = () => {
 
     // Reusable button component
     const Button = ({ onClick, text, color }) => (
-        <button onClick={onClick} className={`bg-${color}-500 text-white px-4 py-2 rounded`}>
+        <button 
+            onClick={onClick} 
+            className={`${styles.button} ${color === 'blue' ? styles.buttonBlue : styles.buttonGreen}`}
+        >
             {text}
         </button>
     );
 
     return (
-        <div className="flex flex-col items-center p-4 space-y-4">
-            <h2 className="text-xl font-bold">色彩分析工具</h2>
-            <video ref={videoRef} autoPlay className="w-full max-w-md rounded-lg" />
-            <Button onClick={startCamera} text="Start Camera" color="blue" />
-            <Button onClick={captureImage} text="Capture Image" color="green" />
-            <input type="file" accept="image/*" onChange={handleFileUpload} className="mt-2" />
-            <canvas ref={canvasRef} className="hidden" />
+        <div className={styles.container}>
+            <h2 className={styles.title}>色彩分析工具</h2>
+            <video ref={videoRef} autoPlay className={styles.video} />
+            <Button onClick={startCamera} text="启动摄像头" color="blue" />
+            <Button onClick={captureImage} text="捕获图像" color="green" />
+            <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileUpload} 
+                className={styles.fileInput} 
+            />
+            <canvas ref={canvasRef} className={styles.canvas} />
             
             {/* Preview captured image */}
             {image && (
                 <>
-                    <img src={image} alt="Captured" className="w-full max-w-md rounded-lg" />
+                    <img src={image} alt="Captured" className={styles.imagePreview} />
                     {dominantColor && (
-                        <div className="w-16 h-16 rounded-full mt-2" style={{ backgroundColor: dominantColor }} />
+                        <div 
+                            className={styles.colorDisplay} 
+                            style={{ backgroundColor: dominantColor }} 
+                        />
                     )}
                 </>
             )}

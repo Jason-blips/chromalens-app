@@ -1,0 +1,72 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.video {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 0.5rem;
+}
+
+.button {
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button:active {
+  opacity: 0.8;
+}
+
+.buttonBlue {
+  background-color: #3b82f6;
+}
+
+.buttonGreen {
+  background-color: #10b981;
+}
+
+.fileInput {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.canvas {
+  display: none;
+}
+
+.imagePreview {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 0.5rem;
+}
+
+.colorDisplay {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  margin-top: 0.5rem;
+  border: 2px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
