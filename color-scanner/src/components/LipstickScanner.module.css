@@ -15,7 +15,11 @@
 .video {
   width: 100%;
   max-width: 28rem;
+  min-height: 200px;
+  background-color: #000;
   border-radius: 0.5rem;
+  object-fit: cover;
+  transform: scaleX(-1); /* 镜像显示，更符合用户习惯 */
 }
 
 .button {

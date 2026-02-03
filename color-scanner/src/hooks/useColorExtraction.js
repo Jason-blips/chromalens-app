@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import ColorThief from 'color-thief';
 import { 
     extractDominantColorFromCanvas, 
     extractDominantColorFromVideo,
@@ -18,7 +17,7 @@ export const useColorExtraction = () => {
     /**
      * 从图像URL或base64数据中提取主色调
      * @param {string} imageSrc - 图像URL或base64数据
-     * @param {number} quality - 提取质量 (1-10，默认5)
+     * @param {number} quality - 提取质量 (1-10，默认5，影响采样率)
      */
     const extractDominantColor = useCallback(async (imageSrc, quality = 5) => {
         if (!imageSrc) {
@@ -40,21 +39,21 @@ export const useColorExtraction = () => {
                 imgElement.src = imageSrc;
             });
 
-            // 临时添加到DOM以便ColorThief可以访问
-            imgElement.style.display = 'none';
-            document.body.appendChild(imgElement);
-
-            const colorThief = new ColorThief();
-            const color = colorThief.getColor(imgElement, quality);
+            // 创建临时Canvas来绘制图像
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imgElement.width;
+            tempCanvas.height = imgElement.height;
+            const ctx = tempCanvas.getContext('2d');
             
-            // 清理临时元素
-            document.body.removeChild(imgElement);
+            // 绘制图像到Canvas
+            ctx.drawImage(imgElement, 0, 0);
+            
+            // 使用优化的提取算法
+            // quality参数转换为采样率 (1=0.05, 5=0.1, 10=0.2)
+            const sampleRate = 0.05 + (quality - 1) * 0.0167;
+            const color = extractDominantColorFromCanvas(tempCanvas, { sampleRate });
 
-            setDominantColor({
-                r: color[0],
-                g: color[1],
-                b: color[2]
-            });
+            setDominantColor(color);
         } catch (err) {
             console.error('Error extracting color:', err);
             setError('提取颜色失败');

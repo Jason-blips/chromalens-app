@@ -26,6 +26,13 @@ export const useCameraCapture = () => {
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 setIsCameraActive(true);
+                
+                // 确保视频播放
+                videoRef.current.onloadedmetadata = () => {
+                    videoRef.current.play().catch(err => {
+                        console.error('Error playing video stream:', err);
+                    });
+                };
             }
         } catch (err) {
             console.error('Unable to access the camera:', err);

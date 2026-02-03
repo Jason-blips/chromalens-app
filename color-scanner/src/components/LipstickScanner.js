@@ -131,8 +131,16 @@ const LipstickScanner = () => {
                 ref={videoRef} 
                 autoPlay 
                 playsInline
+                muted
                 className={styles.video}
                 style={{ display: isCameraActive ? 'block' : 'none' }}
+                onLoadedMetadata={() => {
+                    if (videoRef.current) {
+                        videoRef.current.play().catch(err => {
+                            console.error('Error playing video:', err);
+                        });
+                    }
+                }}
             />
             
             {/* 控制按钮 */}
