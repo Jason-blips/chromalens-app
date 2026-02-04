@@ -68,7 +68,14 @@ export const extractDominantColorFromImageData = (imageData, options = {}) => {
     const [r, g, b] = dominantColorKey.split(',').map(Number);
     
     const endTime = performance.now();
-    console.log(`Color extraction took ${(endTime - startTime).toFixed(2)}ms`);
+    const duration = endTime - startTime;
+    
+    // 性能监控：如果超过150ms，记录警告
+    if (duration > 150) {
+        console.warn(`Color extraction took ${duration.toFixed(2)}ms (exceeds 150ms target)`);
+    } else {
+        console.log(`✓ Color extraction took ${duration.toFixed(2)}ms`);
+    }
     
     return { r, g, b };
 };

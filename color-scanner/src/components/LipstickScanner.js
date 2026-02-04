@@ -9,6 +9,7 @@ import { debounce, throttle } from '../utils/debounce';
 import { validateFile } from '../utils/validators';
 import ColorPalette from './ColorPalette';
 import ColorHistory from './ColorHistory';
+import ColorAnalysis from './ColorAnalysis';
 import LoadingSpinner from './LoadingSpinner';
 import styles from './LipstickScanner.module.css';
 
@@ -622,6 +623,15 @@ const LipstickScanner = () => {
                                     </span>
                                 </div>
                             )}
+
+                            {/* 颜色分析 */}
+                            <ColorAnalysis 
+                                color={{
+                                    rgb: dominantColor,
+                                    hex: colorFormats.hex,
+                                    hsl: colorFormats.hsl
+                                }}
+                            />
                         </div>
                     )}
 

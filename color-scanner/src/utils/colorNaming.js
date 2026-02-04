@@ -151,12 +151,25 @@ export const getColorNamingModel = async () => {
 
 /**
  * 预测颜色名称（便捷函数）
+ * 优先使用TensorFlow.js，如果不可用则回退到标准KNN
  * @param {number} r - 红色值 (0-255)
  * @param {number} g - 绿色值 (0-255)
  * @param {number} b - 蓝色值 (0-255)
+ * @param {boolean} useTensorFlow - 是否使用TensorFlow.js（默认true）
  * @returns {Promise<Object>} {name: string, confidence: number}
  */
-export const predictColorName = async (r, g, b) => {
+export const predictColorName = async (r, g, b, useTensorFlow = true) => {
+    if (useTensorFlow) {
+        try {
+            const { predictColorNameWithTensorFlow } = await import('./tensorflowColorNaming');
+            return await predictColorNameWithTensorFlow(r, g, b);
+        } catch (error) {
+            console.warn('TensorFlow.js not available, using standard KNN:', error);
+            // 回退到标准KNN实现
+        }
+    }
+    
+    // 使用标准KNN实现
     const model = await getColorNamingModel();
     return model.predictColorName(r, g, b);
 };
