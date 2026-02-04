@@ -143,53 +143,6 @@ export const useCameraCapture = () => {
                             console.log('✓ 视频播放成功');
                             console.log('视频尺寸:', video.videoWidth, 'x', video.videoHeight);
                             console.log('视频显示尺寸:', video.offsetWidth, 'x', video.offsetHeight);
-                            
-                            // 创建一个测试视频元素来验证视频流是否有内容
-                            setTimeout(() => {
-                                const testVideo = document.createElement('video');
-                                testVideo.srcObject = stream;
-                                testVideo.autoplay = true;
-                                testVideo.muted = true;
-                                testVideo.playsInline = true;
-                                testVideo.style.cssText = 'position:fixed;top:10px;right:10px;width:200px;height:150px;border:3px solid red;z-index:99999;background:#000;object-fit:cover;';
-                                document.body.appendChild(testVideo);
-                                
-                                testVideo.addEventListener('loadedmetadata', () => {
-                                    console.log('测试视频元数据:', {
-                                        width: testVideo.videoWidth,
-                                        height: testVideo.videoHeight,
-                                        readyState: testVideo.readyState
-                                    });
-                                });
-                                
-                                testVideo.addEventListener('playing', () => {
-                                    console.log('测试视频正在播放');
-                                    // 尝试从视频中提取一帧来检查是否有内容
-                                    setTimeout(() => {
-                                        const testCanvas = document.createElement('canvas');
-                                        testCanvas.width = testVideo.videoWidth || 640;
-                                        testCanvas.height = testVideo.videoHeight || 480;
-                                        const ctx = testCanvas.getContext('2d');
-                                        ctx.drawImage(testVideo, 0, 0);
-                                        const imageData = ctx.getImageData(0, 0, 10, 10);
-                                        const hasContent = imageData.data.some((val, i) => i % 4 !== 3 && val !== 0 && val !== 128);
-                                        console.log('视频帧内容检查:', {
-                                            hasContent: hasContent,
-                                            firstPixel: Array.from(imageData.data.slice(0, 4)),
-                                            allGray: imageData.data.slice(0, 40).every((val, i) => {
-                                                if (i % 4 === 3) return true; // alpha通道
-                                                return val === 128 || val === 0;
-                                            })
-                                        });
-                                    }, 1000);
-                                });
-                                
-                                testVideo.play().then(() => {
-                                    console.log('测试视频已添加到右上角（红色边框）');
-                                }).catch(err => {
-                                    console.error('测试视频播放失败:', err);
-                                });
-                            }, 500);
                         } catch (err) {
                             console.error('✗ 视频播放失败:', err);
                             setError('视频播放失败: ' + err.message);
@@ -275,6 +228,25 @@ export const useCameraCapture = () => {
      */
     const stopCamera = useCallback(() => {
         console.log('停止摄像头');
+        
+        // 清理所有测试视频元素（如果有遗留的）
+        const testVideos = document.querySelectorAll('video[style*="border:3px solid red"], video[style*="position:fixed"][style*="right:10px"]');
+        testVideos.forEach(video => {
+            try {
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
+                video.srcObject = null;
+                video.pause();
+                if (video.parentNode) {
+                    video.parentNode.removeChild(video);
+                }
+                console.log('已清理测试视频元素');
+            } catch (err) {
+                console.error('清理测试视频失败:', err);
+            }
+        });
+        
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
                 track.stop();
@@ -286,6 +258,7 @@ export const useCameraCapture = () => {
             videoRef.current.srcObject = null;
         }
         setIsCameraActive(false);
+        setError(null);
     }, []);
 
     /**
@@ -375,6 +348,22 @@ export const useCameraCapture = () => {
     // 组件卸载时清理
     useEffect(() => {
         return () => {
+            // 清理所有测试视频元素
+            const testVideos = document.querySelectorAll('video[style*="border:3px solid red"], video[style*="position:fixed"][style*="right:10px"]');
+            testVideos.forEach(video => {
+                try {
+                    if (video.srcObject) {
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                    }
+                    video.srcObject = null;
+                    video.pause();
+                    if (video.parentNode) {
+                        video.parentNode.removeChild(video);
+                    }
+                } catch (err) {
+                    console.error('清理测试视频失败:', err);
+                }
+            });
             stopCamera();
         };
     }, [stopCamera]);
