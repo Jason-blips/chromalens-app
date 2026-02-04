@@ -37,39 +37,81 @@ def hash_password(password):
 def register():
     """用户注册"""
     try:
+        if not request.is_json:
+            return jsonify({"error": "请求必须是JSON格式"}), 400
+            
         data = request.json
+        if not data:
+            return jsonify({"error": "请求数据不能为空"}), 400
+        
         users = load_users()
         
         # 验证必填字段
-        if not data.get("email") or not data.get("password") or not data.get("username"):
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+        username = data.get("username", "").strip()
+        
+        if not email or not password or not username:
             return jsonify({"error": "缺少必填字段"}), 400
         
+        # 输入验证
+        if len(username) < 3 or len(username) > 20:
+            return jsonify({"error": "用户名长度必须在3-20个字符之间"}), 400
+        
+        if len(password) < 6:
+            return jsonify({"error": "密码长度至少6位"}), 400
+        
+        if len(password) > 128:
+            return jsonify({"error": "密码长度不能超过128位"}), 400
+        
+        # 简单的邮箱格式验证
+        if "@" not in email or "." not in email.split("@")[1]:
+            return jsonify({"error": "邮箱格式无效"}), 400
+        
+        if len(email) > 255:
+            return jsonify({"error": "邮箱长度过长"}), 400
+        
         # 检查邮箱是否已存在
-        if data["email"] in users:
+        if email in users:
             return jsonify({"error": "该邮箱已被注册"}), 400
+        
+        # 检查用户名是否已存在
+        existing_usernames = [u.get("username") for u in users.values()]
+        if username in existing_usernames:
+            return jsonify({"error": "该用户名已被使用"}), 400
+        
+        # 验证头像数据大小（如果提供）
+        avatar = data.get("avatar")
+        if avatar and len(avatar) > 2 * 1024 * 1024:  # 2MB限制
+            return jsonify({"error": "头像数据过大"}), 400
         
         # 创建新用户
         user_id = str(len(users) + 1)
         user = {
             "id": user_id,
-            "username": data["username"],
-            "email": data["email"],
-            "password": hash_password(data["password"]),
+            "username": username,
+            "email": email,
+            "password": hash_password(password),
             "gender": data.get("gender", ""),
-            "avatar": data.get("avatar"),
+            "avatar": avatar,
             "createdAt": datetime.now().isoformat(),
             "updatedAt": datetime.now().isoformat()
         }
         
-        users[data["email"]] = user
+        users[email] = user
         save_users(users)
         
         # 返回用户信息（不包含密码）
         user_response = {k: v for k, v in user.items() if k != "password"}
         return jsonify({"success": True, "user": user_response}), 201
         
+    except KeyError as e:
+        return jsonify({"error": f"缺少必要字段: {str(e)}"}), 400
+    except ValueError as e:
+        return jsonify({"error": f"数据格式错误: {str(e)}"}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"注册错误: {str(e)}")
+        return jsonify({"error": "服务器内部错误，请稍后重试"}), 500
 
 @app.route("/api/login", methods=["POST"])
 def login():

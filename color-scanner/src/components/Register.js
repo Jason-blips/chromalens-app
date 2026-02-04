@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { validateEmail, validatePassword, validateUsername, validateFile } from '../utils/validators';
+import LoadingSpinner from './LoadingSpinner';
 import styles from './Auth.module.css';
 
 /**
@@ -31,13 +33,9 @@ const Register = ({ onSwitchToLogin }) => {
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                setError('头像文件大小不能超过2MB');
-                return;
-            }
-            
-            if (!file.type.startsWith('image/')) {
-                setError('请选择图片文件');
+            const validation = validateFile(file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], 2 * 1024 * 1024);
+            if (!validation.valid) {
+                setError(validation.message);
                 return;
             }
 
@@ -45,6 +43,9 @@ const Register = ({ onSwitchToLogin }) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 setAvatarPreview(e.target.result);
+            };
+            reader.onerror = () => {
+                setError('读取文件失败，请重试');
             };
             reader.readAsDataURL(file);
             setError(null);
@@ -61,21 +62,28 @@ const Register = ({ onSwitchToLogin }) => {
             return;
         }
 
+        // 验证用户名
+        const usernameValidation = validateUsername(formData.username);
+        if (!usernameValidation.valid) {
+            setError(usernameValidation.message);
+            return;
+        }
+
+        // 验证邮箱
+        if (!validateEmail(formData.email)) {
+            setError('请输入有效的邮箱地址');
+            return;
+        }
+
         // 验证密码
         if (formData.password !== formData.confirmPassword) {
             setError('两次输入的密码不一致');
             return;
         }
 
-        if (formData.password.length < 6) {
-            setError('密码长度至少6位');
-            return;
-        }
-
-        // 验证邮箱格式
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-            setError('请输入有效的邮箱地址');
+        const passwordValidation = validatePassword(formData.password);
+        if (!passwordValidation.valid) {
+            setError(passwordValidation.message);
             return;
         }
 

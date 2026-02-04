@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useCameraCapture } from '../hooks/useCameraCapture';
 import { useColorExtraction } from '../hooks/useColorExtraction';
 import { useColorConverter } from '../hooks/useColorConverter';
 import { useColorHistory } from '../hooks/useColorHistory';
 import { predictColorName } from '../utils/colorNaming';
 import { extractColorPalette } from '../utils/fastColorExtractor';
+import { debounce, throttle } from '../utils/debounce';
+import { validateFile } from '../utils/validators';
 import ColorPalette from './ColorPalette';
 import ColorHistory from './ColorHistory';
+import LoadingSpinner from './LoadingSpinner';
 import styles from './LipstickScanner.module.css';
 
 /**
