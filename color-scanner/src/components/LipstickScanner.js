@@ -15,6 +15,7 @@ import ColorAnalysis from './ColorAnalysis';
 import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
 import CopyButton from './CopyButton';
+import SelectionOverlay from './SelectionOverlay';
 import styles from './LipstickScanner.module.css';
 
 /**
@@ -130,7 +131,7 @@ const LipstickScanner = () => {
     }, [extractDominantColor, activateExclusive]);
 
     /**
-     * 处理鼠标按下 - 开始选择区域
+     * 处理鼠标按下 - 开始选择区域（支持触摸事件）
      */
     const handleMouseDown = useCallback((e) => {
         if (!image || !imageRef.current) return;
@@ -139,9 +140,13 @@ const LipstickScanner = () => {
         e.preventDefault();
         e.stopPropagation();
         
+        // 支持触摸事件
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
         const rect = imageRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
         
         setIsSelecting(true);
         setSelectionStart({ x, y });
@@ -150,28 +155,40 @@ const LipstickScanner = () => {
     }, [image, isExtracting, isNaming, activateFeature]);
 
     /**
-     * 处理鼠标移动 - 更新选择区域
+     * 处理鼠标移动 - 更新选择区域（使用防抖优化性能）
      */
     const handleMouseMove = useCallback((e) => {
         if (!isSelecting || !selectionStart || !imageRef.current) return;
         
         const rect = imageRef.current.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
+        const currentX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const currentY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
         
         const x = Math.min(selectionStart.x, currentX);
         const y = Math.min(selectionStart.y, currentY);
         const width = Math.abs(currentX - selectionStart.x);
         const height = Math.abs(currentY - selectionStart.y);
         
-        setSelectionArea({ x, y, width, height });
+        // 确保选择区域在图片范围内
+        const clampedX = Math.max(0, Math.min(x, rect.width - width));
+        const clampedY = Math.max(0, Math.min(y, rect.height - height));
+        const clampedWidth = Math.min(width, rect.width - clampedX);
+        const clampedHeight = Math.min(height, rect.height - clampedY);
+        
+        setSelectionArea({ 
+            x: clampedX, 
+            y: clampedY, 
+            width: clampedWidth, 
+            height: clampedHeight 
+        });
     }, [isSelecting, selectionStart]);
 
     /**
-     * 从选中区域提取颜色
+     * 从选中区域提取颜色（优化版本）
      */
     const extractColorFromSelection = useCallback((area) => {
         if (!imageRef.current || !image) return;
+        if (isExtracting || isNaming) return; // 防止重复处理
         
         const img = imageRef.current;
         
@@ -183,46 +200,58 @@ const LipstickScanner = () => {
         }
         
         function extractFromArea(imageElement, selectionArea) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // 计算实际图片尺寸和显示尺寸的比例
-            const scaleX = imageElement.naturalWidth / imageElement.offsetWidth;
-            const scaleY = imageElement.naturalHeight / imageElement.offsetHeight;
-            
-            // 计算选中区域在实际图片中的位置和尺寸
-            const actualX = Math.max(0, Math.floor(selectionArea.x * scaleX));
-            const actualY = Math.max(0, Math.floor(selectionArea.y * scaleY));
-            const actualWidth = Math.min(
-                Math.floor(selectionArea.width * scaleX),
-                imageElement.naturalWidth - actualX
-            );
-            const actualHeight = Math.min(
-                Math.floor(selectionArea.height * scaleY),
-                imageElement.naturalHeight - actualY
-            );
-            
-            // 确保尺寸有效
-            if (actualWidth <= 0 || actualHeight <= 0) {
-                console.warn('选择区域无效');
-                return;
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                
+                // 计算实际图片尺寸和显示尺寸的比例
+                const scaleX = imageElement.naturalWidth / imageElement.offsetWidth;
+                const scaleY = imageElement.naturalHeight / imageElement.offsetHeight;
+                
+                // 计算选中区域在实际图片中的位置和尺寸（使用更精确的计算）
+                const actualX = Math.max(0, Math.floor(selectionArea.x * scaleX));
+                const actualY = Math.max(0, Math.floor(selectionArea.y * scaleY));
+                const actualWidth = Math.min(
+                    Math.ceil(selectionArea.width * scaleX),
+                    imageElement.naturalWidth - actualX
+                );
+                const actualHeight = Math.min(
+                    Math.ceil(selectionArea.height * scaleY),
+                    imageElement.naturalHeight - actualY
+                );
+                
+                // 确保尺寸有效
+                if (actualWidth <= 0 || actualHeight <= 0) {
+                    console.warn('选择区域无效:', { actualWidth, actualHeight });
+                    return;
+                }
+                
+                // 设置canvas尺寸为选中区域
+                canvas.width = actualWidth;
+                canvas.height = actualHeight;
+                
+                // 使用高质量图像渲染
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                
+                // 绘制选中区域的图片
+                ctx.drawImage(
+                    imageElement,
+                    actualX, actualY, actualWidth, actualHeight,
+                    0, 0, actualWidth, actualHeight
+                );
+                
+                // 从canvas提取颜色（针对小区域优化采样率）
+                const pixelCount = actualWidth * actualHeight;
+                const sampleRate = pixelCount < 10000 ? 0.2 : 0.1; // 小区域使用更高采样率
+                
+                extractColorFromCanvas(canvas, { sampleRate });
+            } catch (error) {
+                console.error('从选择区域提取颜色失败:', error);
+                alert('提取颜色失败，请重试');
             }
-            
-            // 设置canvas尺寸为选中区域
-            canvas.width = actualWidth;
-            canvas.height = actualHeight;
-            
-            // 绘制选中区域的图片
-            ctx.drawImage(
-                imageElement,
-                actualX, actualY, actualWidth, actualHeight,
-                0, 0, actualWidth, actualHeight
-            );
-            
-            // 从canvas提取颜色
-            extractColorFromCanvas(canvas);
         }
-    }, [image, extractColorFromCanvas]);
+    }, [image, extractColorFromCanvas, isExtracting, isNaming]);
 
     /**
      * 处理鼠标抬起 - 完成选择并提取颜色
@@ -330,22 +359,50 @@ const LipstickScanner = () => {
         setSelectionStart(null);
     }, [clearColor]);
 
-    // 全局鼠标事件，确保选择功能正常工作
+    // 全局鼠标事件，确保选择功能正常工作（使用防抖优化）
     useEffect(() => {
         if (isSelecting) {
-            const handleGlobalMouseMove = (e) => {
+            // 使用节流优化鼠标移动事件
+            const throttledMouseMove = throttle((e) => {
                 handleMouseMove(e);
+            }, 16); // 约60fps
+            
+            const handleGlobalMouseMove = (e) => {
+                throttledMouseMove(e);
             };
+            
             const handleGlobalMouseUp = () => {
+                handleMouseUp();
+            };
+            
+            // 添加触摸事件支持（移动端）
+            const handleTouchMove = (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                if (touch && imageRef.current) {
+                    const rect = imageRef.current.getBoundingClientRect();
+                    const fakeEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    };
+                    handleMouseMove(fakeEvent);
+                }
+            };
+            
+            const handleTouchEnd = () => {
                 handleMouseUp();
             };
             
             window.addEventListener('mousemove', handleGlobalMouseMove);
             window.addEventListener('mouseup', handleGlobalMouseUp);
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd);
             
             return () => {
                 window.removeEventListener('mousemove', handleGlobalMouseMove);
                 window.removeEventListener('mouseup', handleGlobalMouseUp);
+                window.removeEventListener('touchmove', handleTouchMove);
+                window.removeEventListener('touchend', handleTouchEnd);
             };
         }
     }, [isSelecting, handleMouseMove, handleMouseUp]);
@@ -561,73 +618,25 @@ const LipstickScanner = () => {
                             className={styles.imagePreview}
                             style={{ 
                                 cursor: isSelecting ? 'crosshair' : 'default',
-                                userSelect: 'none'
+                                userSelect: 'none',
+                                touchAction: 'none' // 防止移动端默认手势
                             }}
                             onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
+                            onTouchStart={handleMouseDown}
+                            draggable={false}
                         />
-                        {/* 选择区域框 */}
-                        {selectionArea && (
-                            <>
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        left: `${selectionArea.x}px`,
-                                        top: `${selectionArea.y}px`,
-                                        width: `${selectionArea.width}px`,
-                                        height: `${selectionArea.height}px`,
-                                        border: '2px solid #3b82f6',
-                                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                                        pointerEvents: 'none',
-                                        boxSizing: 'border-box',
-                                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.3)'
-                                    }}
-                                />
-                                {/* 选择区域信息 */}
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        left: `${selectionArea.x}px`,
-                                        top: `${selectionArea.y - 30}px`,
-                                        backgroundColor: 'rgba(59, 130, 246, 0.95)',
-                                        color: 'white',
-                                        padding: '4px 8px',
-                                        borderRadius: '4px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '500',
-                                        pointerEvents: 'none',
-                                        whiteSpace: 'nowrap',
-                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                                    }}
-                                >
-                                    {Math.round(selectionArea.width)} × {Math.round(selectionArea.height)} 像素
-                                </div>
-                                {/* 四个角的调整点 */}
-                                {[
-                                    { x: 0, y: 0 },
-                                    { x: selectionArea.width, y: 0 },
-                                    { x: selectionArea.width, y: selectionArea.height },
-                                    { x: 0, y: selectionArea.height }
-                                ].map((corner, index) => (
-                                    <div
-                                        key={index}
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${selectionArea.x + corner.x - 4}px`,
-                                            top: `${selectionArea.y + corner.y - 4}px`,
-                                            width: '8px',
-                                            height: '8px',
-                                            backgroundColor: '#3b82f6',
-                                            border: '2px solid white',
-                                            borderRadius: '50%',
-                                            pointerEvents: 'none',
-                                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-                                        }}
-                                    />
-                                ))}
-                            </>
+                        
+                        {/* 选择区域覆盖层 */}
+                        {imageRef.current && (
+                            <SelectionOverlay
+                                selectionArea={selectionArea}
+                                isSelecting={isSelecting}
+                                onClear={handleClearSelection}
+                                imageSize={{
+                                    width: imageRef.current.offsetWidth,
+                                    height: imageRef.current.offsetHeight
+                                }}
+                            />
                         )}
                     </div>
                     
