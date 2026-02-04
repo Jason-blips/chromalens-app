@@ -12,14 +12,13 @@
   margin: 0;
 }
 
+/* 视频容器样式已移到内联样式，这里保留备用 */
 .video {
   width: 100%;
   max-width: 28rem;
   min-height: 200px;
   background-color: #000;
   border-radius: 0.5rem;
-  object-fit: cover;
-  transform: scaleX(-1); /* 镜像显示，更符合用户习惯 */
 }
 
 .button {
