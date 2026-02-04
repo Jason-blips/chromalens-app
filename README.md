@@ -75,18 +75,38 @@ cd ../backend
 pip install -r requirements.txt
 ```
 
-4. **启动后端服务**
-```bash
-python app.py
-```
-后端服务将在 `http://localhost:5000` 启动
-
-5. **启动前端服务**
+4. **一键启动（推荐）**
 ```bash
 cd color-scanner
 npm start
 ```
-前端应用将在 `http://localhost:3000` 启动
+这将同时启动前端和后端服务：
+- 前端应用：`http://localhost:3000`
+- 后端服务：`http://localhost:5000`
+
+**注意**：首次启动会自动检测 Python 环境。如果未安装 Python，请访问 [Python 官网](https://www.python.org/downloads/) 下载安装 Python 3.8+。
+
+### 单独启动（可选）
+
+如果需要单独启动服务：
+
+**仅启动前端：**
+```bash
+cd color-scanner
+npm run start:frontend-only
+```
+
+**仅启动后端：**
+```bash
+cd color-scanner
+npm run start:backend-only
+```
+
+或直接运行：
+```bash
+cd backend
+python app.py
+```
 
 ## 📖 使用指南
 
@@ -203,9 +223,11 @@ chromalens-app/
 - 避免纯色或渐变区域
 
 ### 后端连接失败
-- 确保后端服务正在运行（`python app.py`）
+- 确保使用 `npm start` 启动（会自动启动后端）
+- 如果后端未自动启动，检查是否安装了 Python 3.8+
 - 检查端口5000是否被占用
-- 查看浏览器控制台错误信息
+- 查看终端输出中的后端服务日志
+- 可以手动启动后端：`cd backend && python app.py`
 
 ## 📊 性能指标
 
