@@ -1,0 +1,180 @@
+.historyContainer {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.historyTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.historyActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.exportButton,
+.clearButton {
+  padding: 0.375rem 0.75rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.exportButton:hover,
+.clearButton:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6b7280;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: #3b82f6;
+}
+
+.tabActive {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 600;
+}
+
+.historyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.historyItem {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.historyItem:hover {
+  background: #f3f4f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.colorSwatch {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.375rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.colorDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.colorName {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.colorHex {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 0.25rem;
+}
+
+.confidence {
+  font-size: 0.625rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.colorTime {
+  font-size: 0.625rem;
+  color: #9ca3af;
+}
+
+.itemActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.historyItem:hover .itemActions {
+  opacity: 1;
+}
+
+.favoriteButton,
+.deleteButton {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: white;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.favoriteButton:hover,
+.deleteButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.favoriteActive {
+  background: #fef2f2;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}

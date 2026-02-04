@@ -2,7 +2,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCameraCapture } from '../hooks/useCameraCapture';
 import { useColorExtraction } from '../hooks/useColorExtraction';
 import { useColorConverter } from '../hooks/useColorConverter';
+import { useColorHistory } from '../hooks/useColorHistory';
 import { predictColorName } from '../utils/colorNaming';
+import { extractColorPalette } from '../utils/fastColorExtractor';
+import ColorPalette from './ColorPalette';
+import ColorHistory from './ColorHistory';
 import styles from './LipstickScanner.module.css';
 
 /**
@@ -16,8 +20,13 @@ const LipstickScanner = () => {
     const [selectionArea, setSelectionArea] = useState(null); // 选择区域 {x, y, width, height}
     const [isSelecting, setIsSelecting] = useState(false);
     const [selectionStart, setSelectionStart] = useState(null);
+    const [paletteColors, setPaletteColors] = useState([]);
+    const [showPalette, setShowPalette] = useState(false);
     const imageRef = useRef(null);
     const selectionCanvasRef = useRef(null);
+    
+    // 颜色历史记录
+    const { addToHistory } = useColorHistory();
 
     // 使用摄像头捕获Hook
     const {
@@ -195,12 +204,36 @@ const LipstickScanner = () => {
         }
     }, [image, extractDominantColor]);
 
+    /**
+     * 生成调色板（从图片中提取多个颜色）
+     */
+    const generatePalette = useCallback(() => {
+        if (!imageRef.current || !image) return;
+        
+        const img = imageRef.current;
+        if (!img.complete || img.naturalWidth === 0) {
+            img.onload = () => generatePalette();
+            return;
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const colors = extractColorPalette(imageData, 8); // 提取8种颜色
+        setPaletteColors(colors);
+        setShowPalette(true);
+    }, [image]);
+
 
     /**
      * 当提取到主色调时，更新颜色转换和命名
      */
     useEffect(() => {
-        if (dominantColor) {
+        if (dominantColor && colorFormats.hex) {
             // 更新颜色转换
             updateFromRgb(dominantColor.r, dominantColor.g, dominantColor.b);
             
@@ -209,6 +242,16 @@ const LipstickScanner = () => {
             predictColorName(dominantColor.r, dominantColor.g, dominantColor.b)
                 .then(result => {
                     setColorName(result);
+                    
+                    // 保存到历史记录
+                    addToHistory({
+                        rgb: dominantColor,
+                        hex: colorFormats.hex,
+                        hsl: colorFormats.hsl,
+                        name: result.name,
+                        confidence: result.confidence,
+                        image: image
+                    });
                 })
                 .catch(err => {
                     console.error('Error predicting color name:', err);
@@ -217,10 +260,10 @@ const LipstickScanner = () => {
                 .finally(() => {
                     setIsNaming(false);
                 });
-        } else {
+        } else if (!dominantColor) {
             setColorName(null);
         }
-    }, [dominantColor, updateFromRgb]);
+    }, [dominantColor, colorFormats, updateFromRgb, addToHistory, image]);
 
     /**
      * 清除所有数据
@@ -584,10 +627,33 @@ const LipstickScanner = () => {
                         {selectionArea && (
                             <Button onClick={handleClearSelection} text="清除选择" color="gray" />
                         )}
+                        {image && (
+                            <Button onClick={generatePalette} text="生成调色板" color="blue" />
+                        )}
                         <Button onClick={handleClear} text="清除图片" color="gray" />
                     </div>
                 </div>
             )}
+
+            {/* 调色板显示 */}
+            {showPalette && paletteColors.length > 0 && (
+                <ColorPalette 
+                    colors={paletteColors} 
+                    onColorSelect={(color) => {
+                        updateFromRgb(color.r, color.g, color.b);
+                        extractColorFromCanvas(document.createElement('canvas'));
+                    }}
+                />
+            )}
+
+            {/* 颜色历史记录 */}
+            <ColorHistory 
+                onColorSelect={(color) => {
+                    if (color.rgb) {
+                        updateFromRgb(color.rgb.r, color.rgb.g, color.rgb.b);
+                    }
+                }}
+            />
         </div>
     );
 };
