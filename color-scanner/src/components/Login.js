@@ -12,6 +12,7 @@ const Login = ({ onSwitchToRegister }) => {
         password: ''
     });
     const [error, setError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
 
     const handleChange = (e) => {
         setFormData({

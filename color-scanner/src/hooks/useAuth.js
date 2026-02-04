@@ -87,11 +87,9 @@ export const useAuth = () => {
             const result = await response.json();
             
             if (response.ok && result.success) {
-                // 保存到localStorage
-                localStorage.setItem('chromalens_user', JSON.stringify(result.user));
-                setUser(result.user);
-                setIsAuthenticated(true);
-                return { success: true, user: result.user };
+                // 注册成功，但不自动登录，返回成功信息
+                // 用户需要手动登录
+                return { success: true, user: result.user, message: '注册成功！请登录' };
             } else {
                 throw new Error(result.error || '注册失败');
             }

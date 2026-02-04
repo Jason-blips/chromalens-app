@@ -110,24 +110,6 @@ const LipstickScanner = () => {
     }, [isSelecting, selectionStart]);
 
     /**
-     * 处理鼠标抬起 - 完成选择并提取颜色
-     */
-    const handleMouseUp = useCallback(() => {
-        if (!isSelecting) return;
-        
-        setIsSelecting(false);
-        setSelectionStart(null);
-        
-        if (selectionArea && selectionArea.width > 10 && selectionArea.height > 10) {
-            // 从选中区域提取颜色
-            extractColorFromSelection(selectionArea);
-        } else {
-            // 如果选择区域太小，清除选择
-            setSelectionArea(null);
-        }
-    }, [isSelecting, selectionArea, extractColorFromSelection]);
-
-    /**
      * 从选中区域提取颜色
      */
     const extractColorFromSelection = useCallback((area) => {
@@ -183,6 +165,24 @@ const LipstickScanner = () => {
             extractColorFromCanvas(canvas);
         }
     }, [image, extractColorFromCanvas]);
+
+    /**
+     * 处理鼠标抬起 - 完成选择并提取颜色
+     */
+    const handleMouseUp = useCallback(() => {
+        if (!isSelecting) return;
+        
+        setIsSelecting(false);
+        setSelectionStart(null);
+        
+        if (selectionArea && selectionArea.width > 10 && selectionArea.height > 10) {
+            // 从选中区域提取颜色
+            extractColorFromSelection(selectionArea);
+        } else {
+            // 如果选择区域太小，清除选择
+            setSelectionArea(null);
+        }
+    }, [isSelecting, selectionArea, extractColorFromSelection]);
 
     /**
      * 清除选择区域

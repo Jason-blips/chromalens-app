@@ -20,9 +20,21 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.welcomeText {
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .profileButton {
   padding: 0.5rem 1rem;
-  background-color: #6b7280;
+  background-color: #3b82f6;
   color: white;
   border: none;
   border-radius: 0.25rem;
@@ -32,7 +44,22 @@
 }
 
 .profileButton:hover {
-  background-color: #4b5563;
+  background-color: #2563eb;
+}
+
+.logoutButton {
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.logoutButton:hover {
+  background-color: #dc2626;
 }
 
 .loadingContainer {

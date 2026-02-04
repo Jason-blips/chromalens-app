@@ -7,17 +7,18 @@ import Profile from "./components/Profile";
 import styles from "./App.module.css";
 
 function App() {
-    const { user, isAuthenticated, isLoading } = useAuth();
+    const { user, isAuthenticated, isLoading, logout } = useAuth();
     const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
     const [showProfile, setShowProfile] = useState(false);
 
-    // 监听认证状态变化，当用户登录/注册成功后自动切换
+    // 监听认证状态变化
     useEffect(() => {
-        if (isAuthenticated && user) {
-            // 用户已登录，确保显示主应用
-            setAuthMode('login'); // 重置 authMode，虽然不会显示登录页面
+        if (!isAuthenticated) {
+            // 未登录时，确保显示登录界面
+            setAuthMode('login');
+            setShowProfile(false);
         }
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated]);
 
     if (isLoading) {
         return (
@@ -46,12 +47,21 @@ function App() {
         <div className={styles.appContainer}>
             <header className={styles.header}>
                 <h1 className={styles.appTitle}>chromalens - 图像识别与色彩分析工具</h1>
-                <button 
-                    onClick={() => setShowProfile(!showProfile)}
-                    className={styles.profileButton}
-                >
-                    {showProfile ? '返回' : '个人资料'}
-                </button>
+                <div className={styles.headerActions}>
+                    <span className={styles.welcomeText}>欢迎, {user?.username || '用户'}</span>
+                    <button 
+                        onClick={() => setShowProfile(!showProfile)}
+                        className={styles.profileButton}
+                    >
+                        {showProfile ? '返回' : '个人资料'}
+                    </button>
+                    <button 
+                        onClick={logout}
+                        className={styles.logoutButton}
+                    >
+                        登出
+                    </button>
+                </div>
             </header>
             
             {showProfile ? (

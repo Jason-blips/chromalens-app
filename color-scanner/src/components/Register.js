@@ -17,6 +17,7 @@ const Register = ({ onSwitchToLogin }) => {
     const [avatar, setAvatar] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [error, setError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
     const fileInputRef = useRef(null);
 
     const handleChange = (e) => {
@@ -90,9 +91,30 @@ const Register = ({ onSwitchToLogin }) => {
         const result = await register(registerData);
         if (!result.success) {
             setError(result.error);
+            setSuccessMessage(null);
         } else {
-            // 注册成功，用户已自动登录，App.js 会自动跳转到主页
-            // 不需要手动导航，因为 useAuth 已经更新了 isAuthenticated 状态
+            // 注册成功，显示成功消息并跳转到登录界面
+            setSuccessMessage(result.message || '注册成功！请登录');
+            setError(null);
+            // 清空表单
+            setFormData({
+                username: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                gender: ''
+            });
+            setAvatar(null);
+            setAvatarPreview(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            // 延迟跳转，让用户看到成功消息
+            setTimeout(() => {
+                if (onSwitchToLogin) {
+                    onSwitchToLogin();
+                }
+            }, 1500);
         }
     };
 
@@ -206,6 +228,11 @@ const Register = ({ onSwitchToLogin }) => {
                     />
                 </div>
 
+                {successMessage && (
+                    <div className={styles.successMessage}>
+                        {successMessage}
+                    </div>
+                )}
                 {(error || authError) && (
                     <div className={styles.errorMessage}>
                         {error || authError}
