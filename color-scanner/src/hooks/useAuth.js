@@ -140,7 +140,10 @@ export const useAuth = () => {
             const result = await response.json();
             
             if (response.ok && result.success) {
-                // 保存到localStorage
+                // 保存用户信息和 token
+                if (result.token) {
+                    localStorage.setItem('chromalens_token', result.token);
+                }
                 localStorage.setItem('chromalens_user', JSON.stringify(result.user));
                 setUser(result.user);
                 setIsAuthenticated(true);
@@ -177,6 +180,7 @@ export const useAuth = () => {
      */
     const logout = useCallback(() => {
         localStorage.removeItem('chromalens_user');
+        localStorage.removeItem('chromalens_token');
         setUser(null);
         setIsAuthenticated(false);
         setError(null);
@@ -192,12 +196,22 @@ export const useAuth = () => {
         setError(null);
         
         try {
+            // 获取 JWT token
+            const token = localStorage.getItem('chromalens_token');
+            
             // 尝试连接后端API
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            // 如果有 token，添加到请求头
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
             const response = await fetch(`http://localhost:5000/api/user/${user.id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: headers,
                 body: JSON.stringify(updates)
             });
             
