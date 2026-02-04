@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./hooks/useAuth";
+import { useToast } from "./hooks/useToast";
 import LipstickScanner from "./components/LipstickScanner";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
+import ToastContainer from "./components/ToastContainer";
+import LoadingSpinner from "./components/LoadingSpinner";
 import styles from "./App.module.css";
 
 function App() {
     const { user, isAuthenticated, isLoading, logout } = useAuth();
+    const { toasts, removeToast, success } = useToast();
     const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
     const [showProfile, setShowProfile] = useState(false);
 
@@ -23,7 +27,7 @@ function App() {
     if (isLoading) {
         return (
             <div className={styles.loadingContainer}>
-                <div>加载中...</div>
+                <LoadingSpinner size="large" text="加载中..." />
             </div>
         );
     }
@@ -48,6 +52,15 @@ function App() {
             <header className={styles.header}>
                 <h1 className={styles.appTitle}>chromalens - 图像识别与色彩分析工具</h1>
                 <div className={styles.headerActions}>
+                    {user?.avatar && (
+                        <div className={styles.avatarContainer}>
+                            <img 
+                                src={user.avatar} 
+                                alt={user.username || '用户'} 
+                                className={styles.userAvatar}
+                            />
+                        </div>
+                    )}
                     <span className={styles.welcomeText}>欢迎, {user?.username || '用户'}</span>
                     <button 
                         onClick={() => setShowProfile(!showProfile)}
@@ -69,6 +82,9 @@ function App() {
             ) : (
                 <LipstickScanner />
             )}
+            
+            {/* Toast通知容器 */}
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
         </div>
     );
 }

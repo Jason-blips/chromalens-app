@@ -7,10 +7,14 @@ import { predictColorName } from '../utils/colorNaming';
 import { extractColorPalette } from '../utils/fastColorExtractor';
 import { debounce, throttle } from '../utils/debounce';
 import { validateFile } from '../utils/validators';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useFeatureManager } from '../hooks/useFeatureManager';
 import ColorPalette from './ColorPalette';
 import ColorHistory from './ColorHistory';
 import ColorAnalysis from './ColorAnalysis';
 import LoadingSpinner from './LoadingSpinner';
+import EmptyState from './EmptyState';
+import CopyButton from './CopyButton';
 import styles from './LipstickScanner.module.css';
 
 /**
@@ -26,11 +30,19 @@ const LipstickScanner = () => {
     const [selectionStart, setSelectionStart] = useState(null);
     const [paletteColors, setPaletteColors] = useState([]);
     const [showPalette, setShowPalette] = useState(false);
+    const [dismissedErrors, setDismissedErrors] = useState(new Set()); // 已关闭的错误
     const imageRef = useRef(null);
     const selectionCanvasRef = useRef(null);
     
     // 颜色历史记录
     const { addToHistory } = useColorHistory();
+
+    // 功能管理器 - 确保功能互不干扰
+    const {
+        activateFeature,
+        deactivateFeature,
+        activateExclusive
+    } = useFeatureManager();
 
     // 使用摄像头捕获Hook
     const {
@@ -53,6 +65,13 @@ const LipstickScanner = () => {
         clearColor
     } = useColorExtraction();
 
+    // 当错误清除时，重置已关闭的错误记录
+    useEffect(() => {
+        if (!cameraError && !extractionError) {
+            setDismissedErrors(new Set());
+        }
+    }, [cameraError, extractionError]);
+
     // 使用颜色转换Hook
     const {
         colorFormats,
@@ -66,10 +85,15 @@ const LipstickScanner = () => {
         const imageData = captureImage();
         if (imageData) {
             setImage(imageData);
+            setSelectionArea(null); // 清除之前的选择
+            setShowPalette(false); // 清除调色板
+            setPaletteColors([]);
+            // 停用摄像头功能，激活图片分析功能
+            activateExclusive('image-analysis', ['camera']);
             // 从Canvas提取颜色
             extractColorFromCanvas(canvasRef.current);
         }
-    }, [captureImage, extractColorFromCanvas]);
+    }, [captureImage, extractColorFromCanvas, activateExclusive]);
 
     /**
      * 处理文件上传
@@ -77,23 +101,43 @@ const LipstickScanner = () => {
     const handleFileUpload = useCallback((event) => {
         const file = event.target.files[0];
         if (file) {
+            // 验证文件
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                alert(validation.message);
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const imageData = e.target.result;
                 setImage(imageData);
                 setSelectionArea(null); // 清除之前的选择
+                setShowPalette(false); // 清除调色板
+                setPaletteColors([]);
+                // 停用摄像头功能，激活图片分析功能
+                activateExclusive('image-analysis', ['camera']);
                 // 先提取整张图片的颜色
                 extractDominantColor(imageData);
             };
+            reader.onerror = () => {
+                alert('文件读取失败，请重试');
+            };
             reader.readAsDataURL(file);
         }
-    }, [extractDominantColor]);
+        // 清空input，允许重复选择同一文件
+        event.target.value = '';
+    }, [extractDominantColor, activateExclusive]);
 
     /**
      * 处理鼠标按下 - 开始选择区域
      */
     const handleMouseDown = useCallback((e) => {
         if (!image || !imageRef.current) return;
+        if (isExtracting || isNaming) return; // 正在处理时不允许选择
+        
+        e.preventDefault();
+        e.stopPropagation();
         
         const rect = imageRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -102,7 +146,8 @@ const LipstickScanner = () => {
         setIsSelecting(true);
         setSelectionStart({ x, y });
         setSelectionArea(null);
-    }, [image]);
+        activateFeature('region-selection');
+    }, [image, isExtracting, isNaming, activateFeature]);
 
     /**
      * 处理鼠标移动 - 更新选择区域
@@ -202,11 +247,15 @@ const LipstickScanner = () => {
      */
     const handleClearSelection = useCallback(() => {
         setSelectionArea(null);
+        setIsSelecting(false);
+        setSelectionStart(null);
+        deactivateFeature('region-selection');
+        
+        // 重新提取整张图片的颜色
         if (image) {
-            // 重新提取整张图片的颜色
             extractDominantColor(image);
         }
-    }, [image, extractDominantColor]);
+    }, [image, extractDominantColor, deactivateFeature]);
 
     /**
      * 生成调色板（从图片中提取多个颜色）
@@ -314,30 +363,38 @@ const LipstickScanner = () => {
 
     return (
         <div className={styles.container}>
-            <h2 className={styles.title}>色彩分析工具</h2>
+            <div className={styles.headerSection}>
+                <h2 className={styles.title}>色彩分析工具</h2>
+                <p className={styles.subtitle}>专业的颜色提取、分析和调色板生成工具</p>
+            </div>
             
             {/* 错误提示 */}
-            {(cameraError || extractionError) && (
+            {(cameraError || extractionError) && !dismissedErrors.has(cameraError || extractionError) && (
                 <div className={styles.errorMessage}>
-                    {cameraError || extractionError}
+                    <span className={styles.errorIcon}>⚠️</span>
+                    <span className={styles.errorText}>{cameraError || extractionError}</span>
+                    <button 
+                        className={styles.errorClose}
+                        onClick={() => {
+                            // 标记错误为已关闭
+                            const errorMsg = cameraError || extractionError;
+                            setDismissedErrors(prev => new Set([...prev, errorMsg]));
+                        }}
+                        aria-label="关闭错误提示"
+                    >
+                        ×
+                    </button>
                 </div>
             )}
             
             {/* 摄像头提示 */}
             {isCameraActive && !cameraError && (
-                <div style={{
-                    padding: '0.75rem',
-                    backgroundColor: '#fef3c7',
-                    border: '1px solid #fbbf24',
-                    borderRadius: '0.25rem',
-                    width: '100%',
-                    maxWidth: '28rem',
-                    fontSize: '0.875rem',
-                    color: '#92400e'
-                }}>
-                    💡 提示：如果视频画面是灰色的，可能是摄像头被其他应用占用或摄像头驱动问题。
-                    <br />
-                    你可以使用下方的"选择本地图片"功能来测试颜色分析功能。
+                <div className={styles.cameraTip}>
+                    <span className={styles.tipIcon}>💡</span>
+                    <div className={styles.tipContent}>
+                        <strong>摄像头已启动</strong>
+                        <p>如果视频画面是灰色的，可能是摄像头被其他应用占用。你可以使用下方的"选择本地图片"功能来测试颜色分析。</p>
+                    </div>
                 </div>
             )}
 
@@ -456,13 +513,21 @@ const LipstickScanner = () => {
             {/* 控制按钮 */}
             <div className={styles.buttonGroup}>
                 {!isCameraActive ? (
-                    <Button onClick={startCamera} text="启动摄像头" color="blue" />
+                    <Button 
+                        onClick={startCamera} 
+                        text="📷 启动摄像头" 
+                        color="blue"
+                    />
                 ) : (
                     <>
-                        <Button onClick={stopCamera} text="停止摄像头" color="gray" />
+                        <Button 
+                            onClick={stopCamera} 
+                            text="⏹️ 停止摄像头" 
+                            color="gray"
+                        />
                         <Button 
                             onClick={handleCapture} 
-                            text="捕获图像" 
+                            text="📸 捕获图像" 
                             color="green"
                             disabled={!isCameraActive}
                         />
@@ -567,22 +632,19 @@ const LipstickScanner = () => {
                     </div>
                     
                     {/* 提示信息 */}
-                    <div style={{
-                        padding: '0.5rem',
-                        backgroundColor: '#f0f9ff',
-                        border: '1px solid #bae6fd',
-                        borderRadius: '0.25rem',
-                        fontSize: '0.875rem',
-                        color: '#0369a1',
-                        width: '100%',
-                        textAlign: 'center'
-                    }}>
-                        💡 提示：在图片上拖拽鼠标选择要分析的区域（最小10×10像素）
+                    <div className={styles.tipBox}>
+                        <span className={styles.tipIcon}>💡</span>
+                        <span className={styles.tipText}>
+                            在图片上拖拽鼠标选择要分析的区域（最小10×10像素）
+                        </span>
                     </div>
                     
                     {/* 加载状态 */}
                     {(isExtracting || isNaming) && (
-                        <div className={styles.loading}>分析中...</div>
+                        <LoadingSpinner 
+                            size="medium" 
+                            text={isExtracting ? '提取颜色中...' : '识别颜色名称中...'} 
+                        />
                     )}
 
                     {/* 颜色显示 */}
@@ -598,14 +660,17 @@ const LipstickScanner = () => {
                                 <div className={styles.colorFormatItem}>
                                     <span className={styles.formatLabel}>HEX:</span>
                                     <span className={styles.formatValue}>{colorFormats.hex}</span>
+                                    <CopyButton text={colorFormats.hex} label="HEX" />
                                 </div>
                                 <div className={styles.colorFormatItem}>
                                     <span className={styles.formatLabel}>RGB:</span>
                                     <span className={styles.formatValue}>{colorFormats.rgbString}</span>
+                                    <CopyButton text={colorFormats.rgbString} label="RGB" />
                                 </div>
                                 <div className={styles.colorFormatItem}>
                                     <span className={styles.formatLabel}>HSL:</span>
                                     <span className={styles.formatValue}>{colorFormats.hslString}</span>
+                                    <CopyButton text={colorFormats.hslString} label="HSL" />
                                 </div>
                             </div>
 
@@ -653,8 +718,26 @@ const LipstickScanner = () => {
                 <ColorPalette 
                     colors={paletteColors} 
                     onColorSelect={(color) => {
+                        // 选择调色板颜色时，更新主颜色
                         updateFromRgb(color.r, color.g, color.b);
-                        extractColorFromCanvas(document.createElement('canvas'));
+                        // 清除选择区域，因为选择了新颜色
+                        setSelectionArea(null);
+                        setIsSelecting(false);
+                        setSelectionStart(null);
+                        deactivateFeature('region-selection');
+                        // 预测颜色名称
+                        setIsNaming(true);
+                        predictColorName(color.r, color.g, color.b)
+                            .then(result => {
+                                setColorName(result);
+                            })
+                            .catch(err => {
+                                console.error('Error predicting color name:', err);
+                                setColorName({ name: '未知颜色', confidence: 0 });
+                            })
+                            .finally(() => {
+                                setIsNaming(false);
+                            });
                     }}
                 />
             )}
@@ -663,7 +746,35 @@ const LipstickScanner = () => {
             <ColorHistory 
                 onColorSelect={(color) => {
                     if (color.rgb) {
+                        // 选择历史颜色时，清除当前选择和调色板
+                        setSelectionArea(null);
+                        setIsSelecting(false);
+                        setSelectionStart(null);
+                        setShowPalette(false);
+                        setPaletteColors([]);
+                        // 更新颜色
                         updateFromRgb(color.rgb.r, color.rgb.g, color.rgb.b);
+                        // 更新颜色名称（如果历史记录中有）
+                        if (color.name) {
+                            setColorName({
+                                name: color.name,
+                                confidence: color.confidence || 0
+                            });
+                        } else {
+                            // 如果没有名称，重新预测
+                            setIsNaming(true);
+                            predictColorName(color.rgb.r, color.rgb.g, color.rgb.b)
+                                .then(result => {
+                                    setColorName(result);
+                                })
+                                .catch(err => {
+                                    console.error('Error predicting color name:', err);
+                                    setColorName({ name: '未知颜色', confidence: 0 });
+                                })
+                                .finally(() => {
+                                    setIsNaming(false);
+                                });
+                        }
                     }
                 }}
             />

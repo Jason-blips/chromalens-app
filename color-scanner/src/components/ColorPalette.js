@@ -1,4 +1,5 @@
 import React from 'react';
+import EmptyState from './EmptyState';
 import styles from './ColorPalette.module.css';
 
 /**
@@ -7,7 +8,15 @@ import styles from './ColorPalette.module.css';
  */
 const ColorPalette = ({ colors, onColorSelect }) => {
     if (!colors || colors.length === 0) {
-        return null;
+        return (
+            <div className={styles.paletteContainer}>
+                <EmptyState
+                    icon="🎨"
+                    title="暂无调色板"
+                    description='点击"生成调色板"按钮从图片中提取多种颜色'
+                />
+            </div>
+        );
     }
 
     return (

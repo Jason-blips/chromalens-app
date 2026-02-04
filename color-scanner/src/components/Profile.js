@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import LoadingSpinner from './LoadingSpinner';
 import styles from './Auth.module.css';
 
 /**
@@ -82,7 +83,16 @@ const Profile = () => {
     };
 
     if (!user) {
-        return <div>加载中...</div>;
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '50vh' 
+            }}>
+                <LoadingSpinner size="large" text="加载用户信息..." />
+            </div>
+        );
     }
 
     return (

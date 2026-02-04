@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useColorHistory } from '../hooks/useColorHistory';
+import EmptyState from './EmptyState';
 import styles from './ColorHistory.module.css';
 
 /**
@@ -64,9 +65,13 @@ const ColorHistory = ({ onColorSelect }) => {
             </div>
 
             {displayColors.length === 0 ? (
-                <div className={styles.emptyState}>
-                    {activeTab === 'favorites' ? '暂无收藏的颜色' : '暂无历史记录'}
-                </div>
+                <EmptyState
+                    icon={activeTab === 'favorites' ? '❤️' : '📚'}
+                    title={activeTab === 'favorites' ? '暂无收藏' : '暂无历史记录'}
+                    description={activeTab === 'favorites' 
+                        ? '收藏喜欢的颜色，方便快速访问' 
+                        : '开始分析颜色，历史记录会自动保存'}
+                />
             ) : (
                 <div className={styles.historyGrid}>
                     {displayColors.map((color) => (
